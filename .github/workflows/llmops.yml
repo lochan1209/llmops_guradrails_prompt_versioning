@@ -1,0 +1,39 @@
+name: LLMOps Quality Gate Pipeline
+
+on:
+  push:
+    paths:
+      - 'prompts/**'
+      - 'scripts/**'
+  pull_request:
+    paths:
+      - 'prompts/**'
+      - 'scripts/**'
+
+jobs:
+  run-llmops-evals:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # STEP 1: Guardrail Check
+      - name: Run Security Guardrail Checks
+        run: |
+          python scripts/check_guardrails.py prompts/prompt_v1.yaml
+
+      # STEP 2: RAG Retrieval Metric Evals
+      - name: Run RAG Metrics Evals
+        run: |
+          python scripts/run_evals.py

@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# ChromaDB local cache/storage if created
+*.chroma
+interview_sample.txt
