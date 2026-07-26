@@ -1,0 +1,12 @@
+models:
+  - type: main
+    engine: mock_llm
+    model: fake-model
+
+rails:
+  input:
+    flows:
+      - self check input
+  output:
+    flows:
+      - self check output

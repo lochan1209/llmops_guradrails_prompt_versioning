@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - 'prompts/**'
+      - 'config/**'
       - 'scripts/**'
   pull_request:
     paths:
       - 'prompts/**'
+      - 'config/**'
       - 'scripts/**'
 
 jobs:
@@ -18,22 +20,22 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.13
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.10'
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # STEP 1: Guardrail Check
+      # STEP 1: Guardrail Check (NeMo + Safety Classifier)
       - name: Run Security Guardrail Checks
         run: |
-          python scripts/check_guardrails.py prompts/prompt_v1.yaml
+          python scripts/check_guardrails.py
 
-      # STEP 2: RAG Retrieval Metric Evals
+      # STEP 2: RAG Retrieval Metric Evals & Quality Gate
       - name: Run RAG Metrics Evals
         run: |
           python scripts/run_evals.py

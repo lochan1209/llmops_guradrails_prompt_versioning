@@ -4,6 +4,14 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import chromadb
 from chromadb.utils import embedding_functions
 from transformers import pipeline
+import yaml
+
+# Add the project root directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Now import cleanly from scripts
+from scripts.check_guardrails import run_input_guardrail, run_output_guardrail
+
 
 def calculate_rag_metrics(retrieved_ids: list, ground_truth_ids: list, total_db_size: int):
     retrieved_set = set(retrieved_ids)
@@ -27,9 +35,19 @@ def calculate_rag_metrics(retrieved_ids: list, ground_truth_ids: list, total_db_
     return {"precision": precision, "recall": recall, "accuracy": accuracy, "mrr": mrr}
 
 def run_rag_with_evals(file_path: str, query: str, expected_gt_ids: list, top_k: int = 2):
+    # 1. INPUT GUARDRAIL (Llama Guard + NeMo)
+    if not run_input_guardrail(query):
+        return "BLOCKED BY INPUT GUARDRAILS"
+
     with open(file_path, "r", encoding="utf-8") as f:
         text = f.read()
     
+    prompt_file = "prompts/prompt_v1.yaml"
+    with open(prompt_file, "r", encoding="utf-8") as pf:
+        prompt_config = yaml.safe_load(pf)
+
+    system_instructions = prompt_config.get("system_prompt", "")
+
     splitter = RecursiveCharacterTextSplitter(chunk_size=150, chunk_overlap=20)
     chunks = splitter.split_text(text)
     total_chunks = len(chunks)
@@ -47,9 +65,14 @@ def run_rag_with_evals(file_path: str, query: str, expected_gt_ids: list, top_k:
     
     generator = pipeline("text-generation", model="gpt2")
     context = " ".join(retrieved_texts)
-    prompt = f"Context: {context}\nQuestion: {query}\nAnswer:"
+    prompt = f" {system_instructions} \n\n Context: {context}\nQuestion: {query}\nAnswer:"
     
     llm_output = generator(prompt, max_new_tokens=20, pad_token_id=50256)[0]["generated_text"]
+
+    # 4. OUTPUT GUARDRAIL (Llama Guard + NeMo)
+    if not run_output_guardrail(llm_output):
+        return "BLOCKED BY OUTPUT GUARDRAILS"
+    
     clean_answer = llm_output.replace(prompt, "").strip()
     
     scores = calculate_rag_metrics(retrieved_ids, expected_gt_ids, total_chunks)
