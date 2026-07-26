@@ -6,7 +6,7 @@ from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.outputs import ChatResult, ChatGeneration
 
 from nemoguardrails import LLMRails, RailsConfig
-from nemoguardrails.llm.helpers import get_llm_instance_wrapper
+from nemoguardrails.integrations.langchain.helpers import get_llm_instance_wrapper
 from nemoguardrails.llm.providers import register_llm_provider
 from transformers import pipeline
 
